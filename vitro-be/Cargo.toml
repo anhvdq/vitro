@@ -1,0 +1,31 @@
+[package]
+name = "vitro-be"
+version = "0.1.0"
+edition = "2024"
+license = "GPL"
+rust-version = "1.93.0"
+
+[dependencies]
+argon2 = "0.5.3"
+axum = { version = "0.8.8", features = ["macros"] }
+axum-extra = { version = "0.12.5", features = ["typed-header", "form", "with-rejection"] }
+axum_typed_multipart = "0.16.5"
+dotenv = "0.15.0"
+jsonwebtoken = { version = "10.3.0", features = ["rust_crypto"] }
+serde = "1.0.228"
+serde_json = "1.0.145"
+serde_with = "3.16.1"
+sqlx = { version = "0.8.6", features = ["runtime-tokio", "tls-native-tls", "postgres", "uuid", "json", "time"] }
+time = { version = "0.3.44", features = ["serde", "formatting", "parsing"] }
+tokio = { version = "1.49.0", features = ["rt", "rt-multi-thread", "macros"] }
+tower-http = { version = "0.6.8", features = ["trace", "cors"] }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
+utoipa = { version = "5.4.0", features = ["uuid"] }
+utoipa-axum = "0.2.0"
+utoipa-scalar = { version = "0.3.0", features = ["axum"] }
+uuid = { version = "1.18.1", features = ["v4", "serde"] }
+validator = { version = "0.20.0", features = ["derive"] }
+
+[dev-dependencies]
+reqwest = { version = "0.12.23", default-features = false, features = ["json", "rustls-tls"] }
