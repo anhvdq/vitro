@@ -1,0 +1,26 @@
+node_modules
+.turbo
+target
+
+# Output
+dist
+.output
+.vercel
+.netlify
+.wrangler
+.tanstack
+
+# Environment
+.env
+.env.*
+!.env.example
+!.env.test
+
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# Logs and operating systems
+*.log
+.DS_Store
+Thumbs.db

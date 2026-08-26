@@ -1,0 +1,44 @@
+{
+	"$schema": "https://turbo.build/schema.json",
+	"tasks": {
+		"build": {
+			"dependsOn": ["^build"],
+			"inputs": ["$TURBO_DEFAULT$", ".env", ".env.example"],
+			"outputs": ["dist/**", "target/release/vitro-be", "target/release/vitro-be.exe"]
+		},
+		"dev": {
+			"cache": false,
+			"persistent": true
+		},
+		"setup": {
+			"cache": false
+		},
+		"db:up": {
+			"cache": false
+		},
+		"db:down": {
+			"cache": false
+		},
+		"db:migrate": {
+			"cache": false
+		},
+		"lint": {
+			"outputs": []
+		},
+		"format": {
+			"cache": false
+		},
+		"format:check": {
+			"outputs": []
+		},
+		"typecheck": {
+			"outputs": []
+		},
+		"test": {
+			"outputs": []
+		},
+		"test:e2e": {
+			"cache": false
+		}
+	}
+}
