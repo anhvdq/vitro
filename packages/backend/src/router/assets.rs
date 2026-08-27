@@ -1,6 +1,8 @@
 use axum::{
     Extension, Json,
     extract::{DefaultBodyLimit, Path, Query, State},
+    http::{StatusCode, header},
+    response::{IntoResponse, Response},
 };
 use axum_extra::extract::WithRejection;
 use axum_typed_multipart::TypedMultipart;
@@ -30,6 +32,8 @@ pub fn routes(state: AssetService) -> OpenApiRouter {
         .routes(routes!(update_asset))
         .routes(routes!(archive_asset))
         .routes(routes!(upload_asset_file).layer(DefaultBodyLimit::max(25 * 1024 * 1024)))
+        .routes(routes!(list_asset_files))
+        .routes(routes!(download_asset_file))
         .with_state(state)
 }
 
@@ -74,7 +78,7 @@ async fn create_asset(
     tag = ASSET_TAG,
     params(
         ("X-Workspace-Id" = String, Header, description = "Workspace id"),
-        ("dataset_id" = Uuid, Query, description = "Dataset id (required)"),
+        ("dataset_id" = Option<Uuid>, Query, description = "Dataset id (optional; filters to a single dataset when provided)"),
         ("page" = Option<u32>, Query, description = "Page number (default 1)"),
         ("page_size" = Option<u32>, Query, description = "Page size (default 20, max 100)"),
         ("sort" = Option<String>, Query, description = "Sort, e.g. created_at:desc"),
@@ -246,14 +250,83 @@ async fn archive_asset(
 async fn upload_asset_file(
     State(service): State<AssetService>,
     WorkspaceId(workspace_id): WorkspaceId,
+    Extension(auth): Extension<AuthInfo>,
     WithRejection(Path(asset_id), _): WithRejection<Path<Uuid>, ApiError>,
     WithRejection(TypedMultipart(dto), _): WithRejection<TypedMultipart<FileUploadDTO>, ApiError>,
 ) -> Result<Json<ApiSuccess<FileResponseDTO>>, ApiError> {
     service
-        .upload_file(workspace_id, asset_id, dto.file)
+        .upload_file(workspace_id, asset_id, &auth, dto.file)
         .await
         .map_err(|e| e.into())
         .map(FileResponseDTO::from)
         .map(ApiSuccess::new)
         .map(Json)
+}
+
+#[utoipa::path(
+    get,
+    path = "/assets/{asset_id}/files",
+    summary = "List files for an asset",
+    tag = ASSET_TAG,
+    params(
+        ("X-Workspace-Id" = String, Header, description = "Workspace id"),
+        ("asset_id" = Uuid, Path, description = "Asset id")
+    ),
+    responses(
+        (status = 200, description = "Files fetched", body = ApiSuccess<Vec<FileResponseDTO>>),
+        (status = 401, description = "Unauthorized"),
+        (status = 404, description = "Not found"),
+        (status = 500, description = "Internal server error"),
+    )
+)]
+async fn list_asset_files(
+    State(service): State<AssetService>,
+    WorkspaceId(workspace_id): WorkspaceId,
+    WithRejection(Path(asset_id), _): WithRejection<Path<Uuid>, ApiError>,
+) -> Result<Json<ApiSuccess<Vec<FileResponseDTO>>>, ApiError> {
+    let rows = service.list_files(workspace_id, asset_id).await?;
+    let data = rows.into_iter().map(FileResponseDTO::from).collect();
+    Ok(Json(ApiSuccess::new(data)))
+}
+
+#[utoipa::path(
+    get,
+    path = "/assets/{asset_id}/files/{file_id}/download",
+    summary = "Download a file for an asset",
+    tag = ASSET_TAG,
+    params(
+        ("X-Workspace-Id" = String, Header, description = "Workspace id"),
+        ("asset_id" = Uuid, Path, description = "Asset id"),
+        ("file_id" = Uuid, Path, description = "File id")
+    ),
+    responses(
+        (status = 200, description = "File bytes", content_type = "application/octet-stream"),
+        (status = 401, description = "Unauthorized"),
+        (status = 404, description = "Not found"),
+        (status = 500, description = "Internal server error"),
+    )
+)]
+async fn download_asset_file(
+    State(service): State<AssetService>,
+    WorkspaceId(workspace_id): WorkspaceId,
+    WithRejection(Path((asset_id, file_id)), _): WithRejection<Path<(Uuid, Uuid)>, ApiError>,
+) -> Result<Response, ApiError> {
+    let (row, bytes) = service
+        .download_file(workspace_id, asset_id, file_id)
+        .await?;
+
+    let content_type = row
+        .content_type
+        .unwrap_or_else(|| "application/octet-stream".to_string());
+    let disposition = format!("attachment; filename=\"{}\"", row.file_name);
+
+    Ok((
+        StatusCode::OK,
+        [
+            (header::CONTENT_TYPE, content_type),
+            (header::CONTENT_DISPOSITION, disposition),
+        ],
+        bytes,
+    )
+        .into_response())
 }

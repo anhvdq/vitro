@@ -25,13 +25,12 @@ export const Route = createFileRoute('/_protected/assets/')({
 	head: () => ({
 		meta: [{ title: 'Assets' }]
 	}),
-	component: RouteComponent,
-	staticData: {
-		breadcrumb: 'Assets'
-	}
+	component: RouteComponent
 });
 
 type SheetMode = 'create' | 'edit' | 'view';
+
+const ALL_DATASETS = '__all__';
 
 function RouteComponent() {
 	const hydrated = useAuthStore((s) => s.hydrated);
@@ -56,14 +55,6 @@ function AssetsPage() {
 		toast.error((datasetsQuery.error as any)?.message ?? 'Failed to load datasets');
 	}, [datasetsQuery.error]);
 
-	useEffect(() => {
-		const datasets = datasetsQuery.data;
-		if (!datasets) return;
-		if (selectedDatasetId) return;
-		if (!datasets.length) return;
-		setSelectedDatasetId(datasets[0].id);
-	}, [datasetsQuery.data, selectedDatasetId, setSelectedDatasetId]);
-
 	const datasets = datasetsQuery.data;
 	if (!datasets) return null;
 
@@ -71,11 +62,15 @@ function AssetsPage() {
 		<div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
 			<div className="flex flex-wrap items-center gap-3 px-4 lg:px-6">
 				<div className="w-full max-w-sm">
-					<Select value={selectedDatasetId ?? ''} onValueChange={setSelectedDatasetId}>
+					<Select
+						value={selectedDatasetId ?? ALL_DATASETS}
+						onValueChange={(value) => setSelectedDatasetId(value === ALL_DATASETS ? null : value)}
+					>
 						<SelectTrigger>
 							<SelectValue placeholder="Select a dataset" />
 						</SelectTrigger>
 						<SelectContent>
+							<SelectItem value={ALL_DATASETS}>All datasets</SelectItem>
 							{datasets.map((d) => (
 								<SelectItem key={d.id} value={d.id}>
 									{d.display_name}
@@ -86,18 +81,16 @@ function AssetsPage() {
 				</div>
 			</div>
 
-			{selectedDatasetId ? (
-				<AssetsForDataset
-					datasetId={selectedDatasetId}
-					open={open}
-					onOpenChange={setOpen}
-					mode={mode}
-					setMode={setMode}
-					active={active}
-					setActive={setActive}
-					onViewAsset={(assetId) => router.navigate({ to: '/assets/$id', params: { id: assetId } })}
-				/>
-			) : null}
+			<AssetsForDataset
+				datasetId={selectedDatasetId ?? undefined}
+				open={open}
+				onOpenChange={setOpen}
+				mode={mode}
+				setMode={setMode}
+				active={active}
+				setActive={setActive}
+				onViewAsset={(assetId) => router.navigate({ to: '/assets/$id', params: { id: assetId } })}
+			/>
 		</div>
 	);
 }
@@ -112,7 +105,7 @@ function AssetsForDataset({
 	setActive,
 	onViewAsset
 }: {
-	datasetId: string;
+	datasetId?: string;
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	mode: SheetMode;
@@ -165,6 +158,8 @@ function AssetsForDataset({
 					setActive(null);
 					onOpenChange(true);
 				}}
+				createDisabled={!datasetId}
+				createDisabledReason={!datasetId ? 'Select a dataset to create an asset in' : undefined}
 				onViewAsset={(asset) => onViewAsset(asset.id)}
 				onEditAsset={(asset) => {
 					setMode('edit');

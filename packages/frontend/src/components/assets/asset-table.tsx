@@ -59,13 +59,18 @@ const baseColumns: ColumnDef<Asset>[] = [
 		enableHiding: false
 	},
 	{
-		accessorKey: 'dataset_id',
-		header: 'Dataset',
-		cell: ({ row }) => (
-			<div className="max-w-44 truncate font-mono text-xs" title={row.original.dataset_id}>
-				{row.original.dataset_id}
-			</div>
-		)
+		accessorKey: 'description',
+		header: 'Description',
+		cell: ({ row }) => {
+			const description = row.original.description;
+			if (!description) return <span className="text-muted-foreground">—</span>;
+
+			return (
+				<div className="max-w-44 truncate" title={description}>
+					{description}
+				</div>
+			);
+		}
 	},
 	{
 		accessorKey: 'owner_user_name',
@@ -149,13 +154,17 @@ export function AssetTable({
 	onCreateAsset,
 	onViewAsset,
 	onEditAsset,
-	onDeleteAsset
+	onDeleteAsset,
+	createDisabled,
+	createDisabledReason
 }: {
 	data: Asset[];
 	onCreateAsset?: () => void;
 	onViewAsset?: (asset: Asset) => void;
 	onEditAsset?: (asset: Asset) => void;
 	onDeleteAsset?: (id: string) => void;
+	createDisabled?: boolean;
+	createDisabledReason?: string;
 }) {
 	const statuses = [
 		{ label: 'ACTIVE', value: 'ACTIVE' },
@@ -219,6 +228,8 @@ export function AssetTable({
 			searchBarFilter={searchBarFilter}
 			facetedFilters={[statusFilter]}
 			onCreate={onCreateAsset}
+			createDisabled={createDisabled}
+			createDisabledReason={createDisabledReason}
 		/>
 	);
 }

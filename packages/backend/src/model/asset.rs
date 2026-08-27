@@ -5,6 +5,7 @@ use validator::Validate;
 
 use crate::model::pagination::ListQueryParams;
 use crate::util::time_format::format_ts;
+use crate::util::validation::SNAKE_CASE_NAME_RE;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, sqlx::Type, utoipa::ToSchema)]
 #[sqlx(type_name = "asset_status", rename_all = "UPPERCASE")]
@@ -59,7 +60,10 @@ pub struct AssetRow {
 #[derive(Debug, Clone, Serialize, Deserialize, Validate, utoipa::ToSchema)]
 pub struct CreateAssetDTO {
     pub dataset_id: Uuid,
-    #[validate(length(min = 1))]
+    #[validate(regex(
+        path = SNAKE_CASE_NAME_RE,
+        message = "must be snake_case (lowercase letters, digits, and underscores only, starting with a letter)"
+    ))]
     pub name: String,
     #[validate(length(min = 1))]
     pub display_name: String,
@@ -137,7 +141,7 @@ impl From<AssetRow> for ReadAssetDTO {
 pub struct ListAssetsQueryParams {
     #[serde(flatten)]
     pub pagination: ListQueryParams,
-    pub dataset_id: Uuid,
+    pub dataset_id: Option<Uuid>,
     pub status: Option<AssetStatus>,
     pub search: Option<String>,
     pub tags: Option<String>,
@@ -145,7 +149,7 @@ pub struct ListAssetsQueryParams {
 
 #[derive(Debug, Clone)]
 pub struct AssetListFilter {
-    pub dataset_id: Uuid,
+    pub dataset_id: Option<Uuid>,
     pub status: Option<AssetStatus>,
     pub search: Option<String>,
     pub tags: Vec<String>,

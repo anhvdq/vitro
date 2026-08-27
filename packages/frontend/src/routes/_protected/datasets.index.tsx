@@ -16,10 +16,7 @@ export const Route = createFileRoute('/_protected/datasets/')({
 	head: () => ({
 		meta: [{ title: 'Datasets' }]
 	}),
-	component: RouteComponent,
-	staticData: {
-		breadcrumb: 'Datasets'
-	}
+	component: RouteComponent
 });
 
 type SheetMode = 'create' | 'edit' | 'view';

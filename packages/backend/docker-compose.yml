@@ -11,3 +11,34 @@ services:
       - POSTGRES_SCHEMA=${PG_DATABASE_SCHEMA:-public}
     volumes:
       - ./scripts/db:/docker-entrypoint-initdb.d
+
+  storage:
+    image: rustfs/rustfs:latest
+    restart: always
+    command: server /data
+    ports:
+      - 9000:9000
+      - 9001:9001
+    environment:
+      - RUSTFS_ACCESS_KEY=${OBJECT_STORAGE_ACCESS_KEY:-vitro}
+      - RUSTFS_SECRET_KEY=${OBJECT_STORAGE_SECRET_KEY:-vitro-dev-secret}
+      - RUSTFS_CONSOLE_ENABLE=true
+    volumes:
+      - storage_data:/data
+
+  storage-init:
+    image: minio/mc:latest
+    restart: "no"
+    depends_on:
+      - storage
+    entrypoint: >
+      /bin/sh -c "
+      until mc alias set rustfs http://storage:9000 ${OBJECT_STORAGE_ACCESS_KEY:-vitro} ${OBJECT_STORAGE_SECRET_KEY:-vitro-dev-secret}; do
+        echo 'Waiting for storage...';
+        sleep 2;
+      done;
+      mc mb --ignore-existing rustfs/${OBJECT_STORAGE_BUCKET:-vitro-dev};
+      "
+
+volumes:
+  storage_data:

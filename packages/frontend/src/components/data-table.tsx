@@ -108,7 +108,9 @@ export function DataTable<T extends z.ZodObject>({
 	getRowId,
 	searchBarFilter,
 	facetedFilters,
-	onCreate
+	onCreate,
+	createDisabled,
+	createDisabledReason
 }: {
 	data: z.infer<T>[];
 	columns: ColumnDef<z.infer<T>>[];
@@ -116,6 +118,8 @@ export function DataTable<T extends z.ZodObject>({
 	searchBarFilter?: SearchBarFilter;
 	facetedFilters?: FacetedFilter[];
 	onCreate?: () => void;
+	createDisabled?: boolean;
+	createDisabledReason?: string;
 }) {
 	const [data, setData] = React.useState(() => initialData);
 	const [rowSelection, setRowSelection] = React.useState({});
@@ -215,7 +219,13 @@ export function DataTable<T extends z.ZodObject>({
 						</DropdownMenuContent>
 					</DropdownMenu>
 					{onCreate && (
-						<Button variant="outline" size="sm" onClick={onCreate}>
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={onCreate}
+							disabled={createDisabled}
+							title={createDisabled ? createDisabledReason : undefined}
+						>
 							<PlusIcon />
 							<span className="hidden lg:inline">New</span>
 						</Button>

@@ -10,6 +10,7 @@ import {
 } from '@/lib/assets/queries';
 import { useDatasetQuery } from '@/lib/datasets/queries';
 import { useAuthStore } from '@/lib/state/auth';
+import { useBreadcrumbStore } from '@/lib/state/breadcrumbs';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -80,6 +81,13 @@ function DatasetDetailPage({ datasetId }: { datasetId: string }) {
 	}
 
 	const dataset = datasetQuery.data;
+
+	const setLabel = useBreadcrumbStore((s) => s.setLabel);
+	useEffect(() => {
+		if (!dataset) return;
+		setLabel(Route.id, dataset.display_name);
+	}, [dataset?.display_name, setLabel]);
+
 	if (!dataset) return null;
 
 	const assets = assetsQuery.data;
@@ -119,6 +127,10 @@ function DatasetDetailPage({ datasetId }: { datasetId: string }) {
 					setActive(null);
 					setOpen(true);
 				}}
+				createDisabled={dataset.status === 'ARCHIVED'}
+				createDisabledReason={
+					dataset.status === 'ARCHIVED' ? 'Archived datasets cannot receive new assets' : undefined
+				}
 				onEditAsset={(asset) => {
 					setMode('edit');
 					setActive(asset);

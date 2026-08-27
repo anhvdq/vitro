@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 type UiStore = {
 	selectedDatasetId: string | null;
-	setSelectedDatasetId: (id: string) => void;
+	setSelectedDatasetId: (id: string | null) => void;
 };
 
 export const useUiStore = create<UiStore>((set) => ({

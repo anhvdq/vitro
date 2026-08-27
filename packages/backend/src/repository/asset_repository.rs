@@ -119,9 +119,6 @@ impl AssetRepositoryTrait for AssetRepositoryImpl {
         let mut count_qb: QueryBuilder<Postgres> =
             QueryBuilder::new("SELECT COUNT(*)::bigint FROM assets a WHERE a.workspace_id = ");
         count_qb.push_bind(workspace_id);
-        count_qb
-            .push(" AND a.dataset_id = ")
-            .push_bind(filter.dataset_id);
 
         let mut data_qb: QueryBuilder<Postgres> = QueryBuilder::new(
             r#" SELECT
@@ -133,9 +130,11 @@ impl AssetRepositoryTrait for AssetRepositoryImpl {
                 .trim(),
         );
         data_qb.push_bind(workspace_id);
-        data_qb
-            .push(" AND a.dataset_id = ")
-            .push_bind(filter.dataset_id);
+
+        if let Some(dataset_id) = filter.dataset_id {
+            count_qb.push(" AND a.dataset_id = ").push_bind(dataset_id);
+            data_qb.push(" AND a.dataset_id = ").push_bind(dataset_id);
+        }
 
         if let Some(status) = filter.status {
             count_qb.push(" AND a.status = ").push_bind(status);

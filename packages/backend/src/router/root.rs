@@ -14,6 +14,9 @@ use utoipa_scalar::{Scalar, Servable};
 
 use crate::config::settings::{jwt_expire_duration, jwt_secret};
 use crate::middleware::auth::authorize;
+use crate::repository::file_metadata_repository::{
+    FileMetadataRepository, FileMetadataRepositoryImpl,
+};
 use crate::repository::file_repository::{FileRepository, FileRepositoryImpl};
 use crate::repository::user_repository::UserRepository;
 use crate::repository::{
@@ -26,6 +29,7 @@ use crate::router::{ASSET_TAG, AUTH_TAG, DATASET_TAG, TASK_RUN_TAG, TASK_TAG};
 use crate::service::auth_service::{AuthService, AuthServiceImpl};
 use crate::service::file_service::{FileService, FileServiceImpl};
 use crate::{
+    config::object_store::ObjectStore,
     config::pg_database::PgDatabase,
     repository::user_repository::UserRepositoryImpl,
     service::{
@@ -101,7 +105,7 @@ const SCALAR_CUSTOM_HTML: &str = r#"
     </html>
 "#;
 
-pub fn routes(db_conn: Arc<PgDatabase>) -> IntoMakeService<Router> {
+pub fn routes(db_conn: Arc<PgDatabase>, object_store: Arc<ObjectStore>) -> IntoMakeService<Router> {
     // Initialize user service
     let user_repository: UserRepository = Arc::new(UserRepositoryImpl::new(Arc::clone(&db_conn)));
 
@@ -111,8 +115,14 @@ pub fn routes(db_conn: Arc<PgDatabase>) -> IntoMakeService<Router> {
         jwt_expire_duration(),
     ));
 
-    let file_repository: FileRepository = Arc::new(FileRepositoryImpl::new());
-    let file_service: FileService = Arc::new(FileServiceImpl::new(Arc::clone(&file_repository)));
+    let file_repository: FileRepository =
+        Arc::new(FileRepositoryImpl::new(Arc::clone(&object_store)));
+    let file_metadata_repository: FileMetadataRepository =
+        Arc::new(FileMetadataRepositoryImpl::new(Arc::clone(&db_conn)));
+    let file_service: FileService = Arc::new(FileServiceImpl::new(
+        Arc::clone(&file_repository),
+        Arc::clone(&file_metadata_repository),
+    ));
 
     let dataset_repository: DatasetRepository =
         Arc::new(DatasetRepositoryImpl::new(Arc::clone(&db_conn)));

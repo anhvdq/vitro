@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use config::{
+    object_store::{self, ObjectStoreTrait},
     pg_database::{self, PgDatabaseTrait},
     settings,
 };
@@ -32,8 +33,13 @@ async fn main() {
         .await
         .unwrap_or_else(|e| panic!("Database error: {e}"));
 
+    // Create object storage client
+    let object_store = object_store::ObjectStore::init()
+        .await
+        .unwrap_or_else(|e| panic!("Object storage error: {e}"));
+
     // Build app, include all routes
-    let app = router::root::routes(Arc::new(db_conn));
+    let app = router::root::routes(Arc::new(db_conn), Arc::new(object_store));
     let port = settings::api_port();
     let version = env!("CARGO_PKG_VERSION");
 

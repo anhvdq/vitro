@@ -1,6 +1,4 @@
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import {
 	Table,
@@ -11,11 +9,14 @@ import {
 	TableRow
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAssetQuery, useUploadAssetMutation } from '@/lib/assets/queries';
+import { FileDropZone } from '@/components/assets/file-drop-zone';
+import { FileList } from '@/components/assets/file-list';
+import { useAssetQuery } from '@/lib/assets/queries';
+import { useAssetFilesQuery } from '@/lib/files/queries';
 import { useAuthStore } from '@/lib/state/auth';
+import { useBreadcrumbStore } from '@/lib/state/breadcrumbs';
 import { createFileRoute } from '@tanstack/react-router';
-import { ChevronDown, ChevronRight, File, Folder, FolderOpen } from 'lucide-react';
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 export const Route = createFileRoute('/_protected/assets/$id')({
@@ -47,10 +48,6 @@ type SchemaField = {
 	distribution?: { label: string; value: number }[];
 };
 
-type FileNode =
-	| { type: 'file'; name: string; size: string }
-	| { type: 'folder'; name: string; children: FileNode[] };
-
 function formatDate(iso: string) {
 	const d = new Date(iso);
 	if (Number.isNaN(d.getTime())) return iso;
@@ -79,13 +76,17 @@ function AssetDetailPage({ assetId }: { assetId: string }) {
 	);
 
 	const assetQuery = useAssetQuery(assetId);
-	const uploadMutation = useUploadAssetMutation();
-	const [file, setFile] = useState<File | null>(null);
+	const filesQuery = useAssetFilesQuery(assetId);
 
 	useEffect(() => {
 		if (!assetQuery.error) return;
 		toast.error((assetQuery.error as any)?.message ?? 'Failed to load asset');
 	}, [assetQuery.error]);
+
+	useEffect(() => {
+		if (!filesQuery.error) return;
+		toast.error((filesQuery.error as any)?.message ?? 'Failed to load files');
+	}, [filesQuery.error]);
 
 	const asset = assetQuery.data;
 
@@ -197,40 +198,13 @@ function AssetDetailPage({ assetId }: { assetId: string }) {
 		[]
 	);
 
-	const files: FileNode | null = useMemo(() => {
-		if (!asset) return null;
-		return {
-			type: 'folder',
-			name: asset.name,
-			children: [
-				{
-					type: 'folder',
-					name: '2025',
-					children: [
-						{
-							type: 'folder',
-							name: '03',
-							children: [
-								{ type: 'file', name: 'part-00000.parquet', size: '128 MB' },
-								{ type: 'file', name: 'part-00001.parquet', size: '131 MB' },
-								{ type: 'file', name: '_SUCCESS', size: '0 B' }
-							]
-						}
-					]
-				},
-				{
-					type: 'folder',
-					name: '_metadata',
-					children: [
-						{ type: 'file', name: 'schema.json', size: '4 KB' },
-						{ type: 'file', name: 'profile.json', size: '38 KB' }
-					]
-				}
-			]
-		};
-	}, [asset]);
+	const setLabel = useBreadcrumbStore((s) => s.setLabel);
+	useEffect(() => {
+		if (!asset) return;
+		setLabel(Route.id, asset.display_name);
+	}, [asset?.display_name, setLabel]);
 
-	if (!asset || !files) return null;
+	if (!asset) return null;
 
 	return (
 		<div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
@@ -294,28 +268,9 @@ function AssetDetailPage({ assetId }: { assetId: string }) {
 					<SchemaTable fields={schemaFields} />
 				</TabsContent>
 
-				<TabsContent value="files" className="mt-4">
-					<div className="mb-4 flex flex-wrap items-center gap-3">
-						<Separator />
-						<Input
-							type="file"
-							accept=".csv,text/csv"
-							onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-						/>
-						<Button
-							type="button"
-							disabled={!file}
-							onClick={() => {
-								uploadMutation
-									.mutateAsync({ assetId: asset.id, file: file! })
-									.then((res) => toast.success(`Uploaded: ${res.data.file_name}`))
-									.catch((err: any) => toast.error(err?.message ?? 'Upload failed'));
-							}}
-						>
-							Upload CSV
-						</Button>
-					</div>
-					<FileTree node={files} />
+				<TabsContent value="files" className="mt-4 flex flex-col gap-4">
+					<FileDropZone assetId={asset.id} />
+					<FileList assetId={asset.id} data={filesQuery.data ?? []} />
 				</TabsContent>
 
 				<TabsContent value="details" className="mt-4">
@@ -412,55 +367,6 @@ function SchemaTable({ fields }: { fields: SchemaField[] }) {
 					))}
 				</TableBody>
 			</Table>
-		</div>
-	);
-}
-
-function FileTree({ node }: { node: FileNode }) {
-	if (node.type === 'file') return <FileLeaf node={node} />;
-	return <FolderNode node={node} />;
-}
-
-function FileLeaf({ node }: { node: Extract<FileNode, { type: 'file' }> }) {
-	return (
-		<div className="flex items-center gap-2 py-1">
-			<File className="text-muted-foreground h-4 w-4" />
-			<span className="font-mono text-xs">{node.name}</span>
-			<span className="text-muted-foreground ml-auto text-xs">{node.size}</span>
-		</div>
-	);
-}
-
-function FolderNode({ node }: { node: Extract<FileNode, { type: 'folder' }> }) {
-	const [open, setOpen] = useState(true);
-
-	return (
-		<div className="space-y-1">
-			<button
-				type="button"
-				className="flex w-full items-center gap-2 py-1"
-				onClick={() => setOpen((v) => !v)}
-			>
-				{open ? (
-					<FolderOpen className="text-muted-foreground h-4 w-4" />
-				) : (
-					<Folder className="text-muted-foreground h-4 w-4" />
-				)}
-				<span className="font-mono text-xs">{node.name}</span>
-				<span className="ml-auto flex items-center gap-1 text-xs text-zinc-500">
-					{open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-				</span>
-			</button>
-
-			{open ? (
-				<div className="border-muted-foreground/20 ml-4 border-l pl-4">
-					{node.children.map((child) => (
-						<Fragment key={`${child.type}:${child.name}`}>
-							<FileTree node={child} />
-						</Fragment>
-					))}
-				</div>
-			) : null}
 		</div>
 	);
 }

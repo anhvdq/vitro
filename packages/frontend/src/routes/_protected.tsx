@@ -17,6 +17,7 @@ import { RouteStaticData } from '@/lib/types';
 import { useEffect } from 'react';
 import { useRouter } from '@tanstack/react-router';
 import { useAuthStore } from '@/lib/state/auth';
+import { useBreadcrumbStore } from '@/lib/state/breadcrumbs';
 
 export const Route = createFileRoute('/_protected')({
 	head: () => ({
@@ -61,6 +62,7 @@ function RouteComponent() {
 
 function AutoBreadcrumbs() {
 	const matches = useMatches();
+	const labels = useBreadcrumbStore((s) => s.labels);
 
 	const crumbs = matches
 		.map((m) => {
@@ -69,7 +71,8 @@ function AutoBreadcrumbs() {
 		})
 		.filter((x) => x.breadcrumb);
 
-	const getLabel = (bc: any, match: any) => (typeof bc === 'function' ? bc(match) : String(bc));
+	const getLabel = (bc: any, match: any) =>
+		labels[match.routeId] ?? (typeof bc === 'function' ? bc(match) : String(bc));
 
 	return (
 		<Breadcrumb>

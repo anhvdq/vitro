@@ -57,7 +57,7 @@ export function AssetUpsertSheet({
 	onOpenChange: (v: boolean) => void;
 	mode: SheetMode;
 	asset: Asset | null;
-	defaultDatasetId: string;
+	defaultDatasetId?: string;
 	onSubmit?: (
 		input: AssetUpsertInput,
 		ctx: { mode: SheetMode; assetId?: string }
@@ -106,7 +106,7 @@ function AssetUpsertForm({
 }: {
 	mode: SheetMode;
 	asset: Asset | null;
-	defaultDatasetId: string;
+	defaultDatasetId?: string;
 	readOnly: boolean;
 	onSubmit?: (
 		input: AssetUpsertInput,
@@ -117,7 +117,7 @@ function AssetUpsertForm({
 	const [name, setName] = useState(asset?.name ?? '');
 	const [displayName, setDisplayName] = useState(asset?.display_name ?? '');
 	const [description, setDescription] = useState(asset?.description ?? '');
-	const [datasetId, setDatasetId] = useState(asset?.dataset_id ?? defaultDatasetId);
+	const [datasetId, setDatasetId] = useState(asset?.dataset_id ?? defaultDatasetId ?? '');
 
 	const [tags, setTags] = useState<string[]>(asset?.tags ?? []);
 	const [tagInput, setTagInput] = useState('');
@@ -194,7 +194,7 @@ function AssetUpsertForm({
 					id="asset-dataset"
 					value={datasetId}
 					onChange={(e) => setDatasetId(e.target.value)}
-					disabled={readOnly || mode !== 'create'}
+					disabled
 					placeholder="Dataset UUID"
 				/>
 			</div>

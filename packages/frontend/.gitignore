@@ -1,0 +1,5 @@
+dist
+.output
+.tanstack
+.turbo
+node_modules

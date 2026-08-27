@@ -52,6 +52,31 @@ pub fn pg_database_password() -> Option<String> {
     get("PG_DATABASE_PASSWORD")
 }
 
+pub fn object_storage_endpoint() -> String {
+    get("OBJECT_STORAGE_ENDPOINT")
+        .expect("'OBJECT_STORAGE_ENDPOINT' is not defined in the environment.")
+}
+
+pub fn object_storage_region() -> String {
+    get("OBJECT_STORAGE_REGION")
+        .expect("'OBJECT_STORAGE_REGION' is not defined in the environment.")
+}
+
+pub fn object_storage_access_key() -> String {
+    get("OBJECT_STORAGE_ACCESS_KEY")
+        .expect("'OBJECT_STORAGE_ACCESS_KEY' is not defined in the environment.")
+}
+
+pub fn object_storage_secret_key() -> String {
+    get("OBJECT_STORAGE_SECRET_KEY")
+        .expect("'OBJECT_STORAGE_SECRET_KEY' is not defined in the environment.")
+}
+
+pub fn object_storage_bucket() -> String {
+    get("OBJECT_STORAGE_BUCKET")
+        .expect("'OBJECT_STORAGE_BUCKET' is not defined in the environment.")
+}
+
 pub fn jwt_secret() -> String {
     get("JWT_SECRET").expect("'JWT_SECRET' is not defined in the environment.")
 }

@@ -1,22 +1,11 @@
 import z from 'zod';
 import { apiFetchJsonWorkspace } from '@/lib/api/client';
-import { env } from '@/lib/env';
-import { ApiErrorBodySchema, VitroApiError } from '@/lib/api/errors';
 import { AssetListResponseSchema, AssetSchema } from '@/lib/assets/types';
 
 const AssetGetResponseSchema = z.object({ data: AssetSchema });
 const AssetCreateResponseSchema = z.object({ data: AssetSchema });
 const AssetUpdateResponseSchema = z.object({ data: AssetSchema });
 const AssetArchiveResponseSchema = z.object({ data: AssetSchema });
-
-const AssetUploadResponseSchema = z.object({
-	data: z.object({
-		path: z.string(),
-		file_name: z.string(),
-		size_bytes: z.number(),
-		content_type: z.string()
-	})
-});
 
 export type CreateAssetInput = {
 	dataset_id: string;
@@ -36,7 +25,7 @@ export type UpdateAssetInput = {
 export async function listAssets(args: {
 	accessToken: string;
 	workspaceId: string;
-	datasetId: string;
+	datasetId?: string;
 	page?: number;
 	pageSize?: number;
 	status?: 'ACTIVE' | 'ARCHIVED';
@@ -117,40 +106,4 @@ export async function archiveAsset(args: {
 		workspaceId: args.workspaceId,
 		schema: AssetArchiveResponseSchema
 	});
-}
-
-export async function uploadAssetFile(args: {
-	accessToken: string;
-	workspaceId: string;
-	assetId: string;
-	file: File;
-}) {
-	const base = env.apiBaseUrl.endsWith('/') ? env.apiBaseUrl.slice(0, -1) : env.apiBaseUrl;
-	const url = `${base}/assets/${args.assetId}/upload`;
-
-	const form = new FormData();
-	form.set('file', args.file);
-
-	const res = await fetch(url, {
-		method: 'POST',
-		headers: {
-			Authorization: `Bearer ${args.accessToken}`,
-			'X-Workspace-Id': args.workspaceId
-		},
-		body: form
-	});
-
-	const json = await res.json();
-	if (!res.ok) {
-		const parsed = ApiErrorBodySchema.parse(json);
-		throw new VitroApiError({
-			status: res.status,
-			code: parsed.error.code,
-			message: parsed.error.message,
-			correlationId: parsed.error.correlation_id,
-			details: parsed.error.details
-		});
-	}
-
-	return AssetUploadResponseSchema.parse(json);
 }

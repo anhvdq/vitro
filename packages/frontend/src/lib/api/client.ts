@@ -27,6 +27,19 @@ type ApiFetchJsonBaseArgs<T> = {
 	schema: z.ZodType<T>;
 };
 
+export async function throwIfError(res: Response): Promise<void> {
+	if (res.ok) return;
+	const json = await res.json();
+	const parsed = ApiErrorBodySchema.parse(json);
+	throw new VitroApiError({
+		status: res.status,
+		code: parsed.error.code,
+		message: parsed.error.message,
+		correlationId: parsed.error.correlation_id,
+		details: parsed.error.details
+	});
+}
+
 async function apiFetchJsonInternal<T>({
 	method,
 	path,
@@ -53,19 +66,11 @@ async function apiFetchJsonInternal<T>({
 		body: body === undefined ? undefined : JSON.stringify(body)
 	});
 
-	const json = await res.json();
-
 	if (!res.ok) {
-		const parsed = ApiErrorBodySchema.parse(json);
-		throw new VitroApiError({
-			status: res.status,
-			code: parsed.error.code,
-			message: parsed.error.message,
-			correlationId: parsed.error.correlation_id,
-			details: parsed.error.details
-		});
+		await throwIfError(res);
 	}
 
+	const json = await res.json();
 	return schema.parse(json);
 }
 
@@ -95,4 +100,38 @@ export async function apiFetchJsonWorkspace<T>(
 			'X-Workspace-Id': args.workspaceId
 		}
 	});
+}
+
+export async function apiFetchFormWorkspace<T>({
+	method,
+	path,
+	body,
+	accessToken,
+	workspaceId,
+	schema
+}: {
+	method: 'POST' | 'PATCH';
+	path: string;
+	body: FormData;
+	accessToken: string;
+	workspaceId: string;
+	schema: z.ZodType<T>;
+}): Promise<T> {
+	const url = joinUrl(env.apiBaseUrl, path);
+
+	const res = await fetch(url, {
+		method,
+		headers: {
+			Authorization: `Bearer ${accessToken}`,
+			'X-Workspace-Id': workspaceId
+		},
+		body
+	});
+
+	if (!res.ok) {
+		await throwIfError(res);
+	}
+
+	const json = await res.json();
+	return schema.parse(json);
 }

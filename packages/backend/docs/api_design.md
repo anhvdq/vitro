@@ -461,7 +461,7 @@ Create a new asset
 
 `GET /assets?page=1&page_size=20&dataset_id={dataset_id}&status=ACTIVE&search=Sales&tags=kpi,sales`
 
-Query list of assets, dataset_id must be provided, support search by status, display name and tags
+Query list of assets, dataset_id is optional (filters to a single dataset when provided; omit to fetch assets across all datasets), support search by status, display name and tags
 
 ### Response `200`
 
@@ -615,13 +615,52 @@ Form fields:
 ```json
 {
   "data": {
-    "path": "./data/ws/<workspace_id>/datasets/<dataset_id>/assets/<asset_id>/<file_name>.csv",
+    "id": "1b2c3d4e-0001-4a11-8b9a-001122334455",
+    "asset_id": "1b2c3d4e-0001-4a11-8b9a-001122334455",
+    "workspace_id": "b0a6f0c2-7d1d-4f2d-9c2a-1b3f8b2f2e10",
     "file_name": "sales_data_daily.csv",
     "size_bytes": 123456,
-    "content_type": "text/csv"
+    "content_type": "text/csv",
+    "uploaded_by": "6b0d6e6b-5c0e-4f3a-9f4c-6a1b3d2c4e01",
+    "created_at": "2025-03-18T14:21:00Z"
   }
 }
 ```
+
+## List files for an asset
+
+`GET /assets/{asset_id}/files`
+
+List all uploaded files for an asset.
+
+### Response `200`
+
+```json
+{
+  "data": [
+    {
+      "id": "1b2c3d4e-0001-4a11-8b9a-001122334455",
+      "asset_id": "1b2c3d4e-0001-4a11-8b9a-001122334455",
+      "workspace_id": "b0a6f0c2-7d1d-4f2d-9c2a-1b3f8b2f2e10",
+      "file_name": "sales_data_daily.csv",
+      "size_bytes": 123456,
+      "content_type": "text/csv",
+      "uploaded_by": "6b0d6e6b-5c0e-4f3a-9f4c-6a1b3d2c4e01",
+      "created_at": "2025-03-18T14:21:00Z"
+    }
+  ]
+}
+```
+
+## Download a file for an asset
+
+`GET /assets/{asset_id}/files/{file_id}/download`
+
+Download the raw bytes of a previously uploaded file.
+
+### Response `200`
+
+Raw file bytes (`Content-Type` matches the stored file's content type, `Content-Disposition: attachment`), not a JSON envelope.
 
 ---
 

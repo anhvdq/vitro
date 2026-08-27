@@ -7,7 +7,7 @@ use uuid::Uuid;
 use crate::model::asset::AssetListFilter;
 use crate::model::asset::{AssetRow, AssetStatus, CreateAssetDTO, UpdateAssetDTO};
 use crate::model::auth::AuthInfo;
-use crate::model::file::StoredFile;
+use crate::model::file::FileRow;
 use crate::repository::asset_repository::AssetRepository;
 use crate::repository::dataset_repository::DatasetRepository;
 use crate::service::file_service::FileService;
@@ -44,8 +44,20 @@ pub trait AssetServiceTrait {
         &self,
         workspace_id: Uuid,
         asset_id: Uuid,
+        auth: &AuthInfo,
         file: FieldData<Bytes>,
-    ) -> Result<StoredFile, ServiceError>;
+    ) -> Result<FileRow, ServiceError>;
+    async fn list_files(
+        &self,
+        workspace_id: Uuid,
+        asset_id: Uuid,
+    ) -> Result<Vec<FileRow>, ServiceError>;
+    async fn download_file(
+        &self,
+        workspace_id: Uuid,
+        asset_id: Uuid,
+        file_id: Uuid,
+    ) -> Result<(FileRow, Bytes), ServiceError>;
 }
 
 pub struct AssetServiceImpl {
@@ -180,8 +192,9 @@ impl AssetServiceTrait for AssetServiceImpl {
         &self,
         workspace_id: Uuid,
         asset_id: Uuid,
+        auth: &AuthInfo,
         file: FieldData<Bytes>,
-    ) -> Result<StoredFile, ServiceError> {
+    ) -> Result<FileRow, ServiceError> {
         let asset = self.asset_repository.get(workspace_id, asset_id).await?;
         if matches!(asset.status, AssetStatus::Archived) {
             return Err(ServiceError::Gone("Asset is archived".into()));
@@ -190,7 +203,32 @@ impl AssetServiceTrait for AssetServiceImpl {
         let file_name = file.metadata.file_name.as_deref().unwrap_or("upload.csv");
         Self::validate_csv(file_name)?;
         self.file_service
-            .save_file(&asset.storage_prefix, file)
+            .save_file(
+                workspace_id,
+                asset_id,
+                auth.user_id,
+                &asset.storage_prefix,
+                file,
+            )
+            .await
+    }
+
+    async fn list_files(
+        &self,
+        workspace_id: Uuid,
+        asset_id: Uuid,
+    ) -> Result<Vec<FileRow>, ServiceError> {
+        self.file_service.list_files(workspace_id, asset_id).await
+    }
+
+    async fn download_file(
+        &self,
+        workspace_id: Uuid,
+        asset_id: Uuid,
+        file_id: Uuid,
+    ) -> Result<(FileRow, Bytes), ServiceError> {
+        self.file_service
+            .download_file(workspace_id, asset_id, file_id)
             .await
     }
 }
