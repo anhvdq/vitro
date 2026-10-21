@@ -1,19 +1,11 @@
 use std::sync::Arc;
 
-use config::{
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use vitro_api::config::{
     object_store::{self, ObjectStoreTrait},
     pg_database::{self, PgDatabaseTrait},
     settings,
 };
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-
-mod config;
-mod middleware;
-mod model;
-mod repository;
-mod router;
-mod service;
-mod util;
 
 #[tokio::main]
 async fn main() {
@@ -39,7 +31,7 @@ async fn main() {
         .unwrap_or_else(|e| panic!("Object storage error: {e}"));
 
     // Build app, include all routes
-    let app = router::root::routes(Arc::new(db_conn), Arc::new(object_store));
+    let app = vitro_api::router::root::routes(Arc::new(db_conn), Arc::new(object_store));
     let port = settings::api_port();
     let version = env!("CARGO_PKG_VERSION");
 

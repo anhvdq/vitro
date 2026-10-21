@@ -3,6 +3,10 @@ use object_store::aws::{AmazonS3, AmazonS3Builder};
 
 use super::settings;
 
+#[allow(
+    async_fn_in_trait,
+    reason = "only called from this crate's binary, which needs no Send bound"
+)]
 pub trait ObjectStoreTrait {
     async fn init() -> Result<Self, Error>
     where

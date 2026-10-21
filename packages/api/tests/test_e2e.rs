@@ -35,7 +35,7 @@ async fn spawn_app() -> Result<AppHandle, Box<dyn Error>> {
     let port = pick_free_port()?;
     let base_url = format!("http://127.0.0.1:{port}");
 
-    let child = Command::new(env!("CARGO_BIN_EXE_vitro-be"))
+    let child = Command::new(env!("CARGO_BIN_EXE_vitro-api"))
         .current_dir(env!("CARGO_MANIFEST_DIR"))
         .env("APP_PORT", port.to_string())
         .env("APP_LOG", "error")

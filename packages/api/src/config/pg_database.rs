@@ -3,6 +3,10 @@ use sqlx::{Error, Pool, Postgres};
 
 use super::settings;
 
+#[allow(
+    async_fn_in_trait,
+    reason = "only called from this crate's binary, which needs no Send bound"
+)]
 pub trait PgDatabaseTrait {
     async fn init() -> Result<Self, Error>
     where
@@ -37,7 +41,7 @@ impl PgDatabaseTrait for PgDatabase {
                 let schema = schema.clone();
                 Box::pin(async move {
                     if let Some(schema) = schema {
-                        let quoted_schema = format!("\"{}\"", &schema);
+                        let quoted_schema = format!("\"{}\"", schema);
                         let sql = format!("SET search_path TO {}", quoted_schema);
                         sqlx::query(&sql).execute(conn).await?;
                     }
