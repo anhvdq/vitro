@@ -34,6 +34,7 @@ Byte-identical `cp`, verify with `cmp`, commit, push. No content edits.
 - **P2 Derivations**: spec enum → Polars lazy compiler (whitelist), tests-before-publish, planner with stale marking/cycle check, six templates.
 - **P3 UI + chat**: port remaining screens to SolidJS, delete `packages/frontend`, dataset/derivation views, vi/en i18n, chat via named tools.
 - **P4**: `google_sheets` connector, MCP + read-only REST with API keys and audit log.
+- P0b deviations from the design docs, kept consistent with existing code: runtime `sqlx::query_as` (no `query_as!`/`.sqlx` cache), the `time` crate instead of `chrono`, UUID v7 instead of ULID for event ids, no `Uow` trait until P1 needs one, and no monthly partitioning of `events` yet. Mailpit joins the Compose file with the notify worker.
 - Existing `task`/`task_run` placeholders replaced by `derivation_runs` in P2 (flagged for removal, not blended).
 
 ## Verification

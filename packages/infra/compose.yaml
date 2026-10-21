@@ -10,7 +10,7 @@ services:
       - POSTGRES_DB=${PG_DATABASE_DB}
       - POSTGRES_SCHEMA=${PG_DATABASE_SCHEMA:-public}
     volumes:
-      - ./scripts/db:/docker-entrypoint-initdb.d
+      - ./db:/docker-entrypoint-initdb.d
 
   storage:
     image: rustfs/rustfs:latest
