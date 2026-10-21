@@ -6,8 +6,8 @@ Run workflows from the repository root:
 
 ```shell
 bun install
-bun run setup
-bun run dev:client
+just setup
+just dev-web
 ```
 
-Use `bun run test:client`, `bun run lint`, `bun run format:check`, `bun run typecheck`, and `bun run build` for verification. The frontend reads `VITE_API_BASE_URL` from `packages/frontend/.env`; the default local backend is `http://localhost:8000`.
+Use `just test-web`, `just check-web` and `just build-web` for verification. The frontend reads `VITE_API_BASE_URL` from `packages/frontend/.env`; the default local backend is `http://localhost:8000`.

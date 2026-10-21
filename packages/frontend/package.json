@@ -7,7 +7,6 @@
 		"dev": "vite dev",
 		"build": "vite build",
 		"preview": "vite preview",
-		"setup": "bun ../../scripts/setup-env.ts",
 		"lint": "biome lint --diagnostic-level=error .",
 		"format": "biome format --write .",
 		"format:check": "biome format .",

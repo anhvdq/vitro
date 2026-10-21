@@ -1,0 +1,2 @@
+[alias]
+x = "run --quiet --package vitro-tooling --bin xtask --"
