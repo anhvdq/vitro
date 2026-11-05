@@ -17,9 +17,9 @@ check-rust:
 test-rust:
     cargo test --workspace --lib --bins
 
-# Event queue and claim loop tests; needs DATABASE_URL to a Postgres the test user can create databases on
+# Event queue, claim loop and session tests; needs DATABASE_URL to a Postgres the test user can create databases on
 test-db:
-    cargo test -p vitro-adapters -p vitro-worker --tests
+    cargo test -p vitro-adapters -p vitro-worker --tests && cargo test -p vitro-api --test auth_sessions
 
 # Database-backed API flow; needs `just db-up db-migrate`
 test-e2e:

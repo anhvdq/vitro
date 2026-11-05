@@ -156,6 +156,34 @@ async fn api_e2e_non_file_endpoints_work() -> Result<(), Box<dyn Error>> {
         .ok_or("Missing email in /auth/me response")?;
     assert_eq!(me_email, email);
 
+    eprintln!("[api_e2e] step: auth.logout");
+    let second_login = client
+        .post(format!("{}/auth/login", app.base_url))
+        .json(&json!({ "email": email, "password": password }))
+        .send()
+        .await?;
+    let second_login_json = expect_json(second_login, StatusCode::OK, "auth.login_second").await?;
+    let second_token = second_login_json["data"]["access_token"]
+        .as_str()
+        .ok_or("Missing access_token in second login response")?
+        .to_string();
+    let logout_resp = client
+        .post(format!("{}/auth/logout", app.base_url))
+        .bearer_auth(&second_token)
+        .send()
+        .await?;
+    assert_eq!(logout_resp.status(), StatusCode::NO_CONTENT, "auth.logout");
+    let revoked_resp = client
+        .get(format!("{}/auth/me", app.base_url))
+        .bearer_auth(&second_token)
+        .send()
+        .await?;
+    assert_eq!(
+        revoked_resp.status(),
+        StatusCode::UNAUTHORIZED,
+        "a logged-out token must stop working"
+    );
+
     eprintln!("[api_e2e] step: auth.exchange_google_placeholder");
     let exchange_resp = client
         .post(format!("{}/auth/exchange", app.base_url))

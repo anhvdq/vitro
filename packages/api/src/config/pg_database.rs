@@ -17,6 +17,12 @@ pub trait PgDatabaseTrait {
 pub struct PgDatabase {
     pool: Pool<Postgres>,
 }
+impl PgDatabase {
+    pub fn from_pool(pool: Pool<Postgres>) -> Self {
+        Self { pool }
+    }
+}
+
 impl PgDatabaseTrait for PgDatabase {
     async fn init() -> Result<Self, Error> {
         let host = settings::pg_database_host();

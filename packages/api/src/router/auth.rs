@@ -21,7 +21,10 @@ pub fn public_routes(service: AuthService) -> OpenApiRouter {
 }
 
 pub fn protected_routes(service: AuthService) -> OpenApiRouter {
-    OpenApiRouter::new().routes(routes!(me)).with_state(service)
+    OpenApiRouter::new()
+        .routes(routes!(me))
+        .routes(routes!(logout))
+        .with_state(service)
 }
 
 #[utoipa::path(
@@ -124,4 +127,23 @@ async fn me(
 ) -> Result<Json<ApiSuccess<ReadUserDTO>>, ApiError> {
     let user = service.get_me(auth.user_id).await?;
     Ok(Json(ApiSuccess::new(user.into())))
+}
+
+#[utoipa::path(
+    post,
+    path = "/auth/logout",
+    summary = "End the current session",
+    tag = AUTH_TAG,
+    responses(
+        (status = 204, description = "Session ended; the token no longer works"),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error"),
+    )
+)]
+async fn logout(
+    State(service): State<AuthService>,
+    Extension(auth): Extension<AuthInfo>,
+) -> Result<axum::http::StatusCode, ApiError> {
+    service.logout(&auth).await?;
+    Ok(axum::http::StatusCode::NO_CONTENT)
 }
