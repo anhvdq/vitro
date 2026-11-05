@@ -3532,6 +3532,15 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 [[package]]
 name = "vitro-adapters"
 version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "serde_json",
+ "sqlx",
+ "time",
+ "tokio",
+ "uuid",
+ "vitro-core",
+]
 
 [[package]]
 name = "vitro-api"
@@ -3566,6 +3575,12 @@ dependencies = [
 [[package]]
 name = "vitro-core"
 version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "serde_json",
+ "time",
+ "uuid",
+]
 
 [[package]]
 name = "vitro-tooling"
@@ -3574,6 +3589,17 @@ version = "0.1.0"
 [[package]]
 name = "vitro-worker"
 version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "serde_json",
+ "sqlx",
+ "time",
+ "tokio",
+ "tracing",
+ "uuid",
+ "vitro-adapters",
+ "vitro-core",
+]
 
 [[package]]
 name = "walkdir"

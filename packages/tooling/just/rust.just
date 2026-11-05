@@ -17,18 +17,20 @@ check-rust:
 test-rust:
     cargo test --workspace --lib --bins
 
+# Event queue and claim loop tests; needs DATABASE_URL to a Postgres the test user can create databases on
+test-db:
+    cargo test -p vitro-adapters -p vitro-worker --tests
+
 # Database-backed API flow; needs `just db-up db-migrate`
 test-e2e:
     cargo test -p vitro-api --test test_e2e
 
 # Start Postgres and object storage
-[working-directory: 'packages/api']
 db-up:
-    docker compose up -d
+    docker compose -f packages/infra/compose.yaml --env-file packages/api/.env up -d
 
-[working-directory: 'packages/api']
 db-down:
-    docker compose down
+    docker compose -f packages/infra/compose.yaml --env-file packages/api/.env down
 
 # Apply SQL migrations (requires sqlx-cli)
 [working-directory: 'packages/api']

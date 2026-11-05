@@ -1,1 +1,3 @@
-//! Worker roles (connector, normalize, profile, derive, notify) and the scheduler. Filled in from P0b onward.
+//! Worker roles (connector, normalize, profile, derive, notify) and the scheduler.
+
+pub mod claim_loop;

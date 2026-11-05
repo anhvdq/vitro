@@ -27,9 +27,10 @@ docs/        MVP plan, system design, code design and implementation plan
 packages/
   frontend/  React 19, TanStack Start/Router/Query, Zustand, Zod, Tailwind, shadcn/ui (replaced by SolidJS in packages/web, see docs/implementation-plan.md)
   api/       vitro-api: Rust, Axum, SQLx, PostgreSQL, layered router/service/repository/model code
-  core/      vitro-core: domain, ports and use cases shared by deployables (empty until P0b)
-  adapters/  vitro-adapters: default adapters for the core ports (empty until P0b)
-  worker/    vitro-worker: worker roles and scheduler (empty until P0b)
+  core/      vitro-core: domain types, PlatformError and ports (EventSink, DeliveryQueue)
+  adapters/  vitro-adapters: PostgreSQL event queue adapter
+  worker/    vitro-worker: claim loop and handler registry (no roles yet)
+  infra/     Docker Compose for local Postgres and RustFS
   tooling/   vitro-tooling: `cargo x` xtask commands and just modules
 ```
 
@@ -49,6 +50,7 @@ Useful focused commands:
 
 - `just dev-web` and `just dev-api`
 - `just test-web` and `just test-rust` (`just test` runs both)
+- `just test-db` for the event queue and claim loop (needs `DATABASE_URL` to a Postgres that can create test databases)
 - `just test-e2e` for the database-backed API flow
 - `just check-web` and `just check-rust` (lint, format check, typecheck)
 - `just fmt` to write formatting
