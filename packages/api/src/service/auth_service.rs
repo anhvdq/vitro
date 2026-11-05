@@ -1,21 +1,20 @@
 use argon2::password_hash::rand_core::OsRng;
+use argon2::password_hash::rand_core::RngCore;
 use argon2::password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString};
 use argon2::{Argon2, password_hash};
 
 use axum_typed_multipart::async_trait;
-use jsonwebtoken::{
-    DecodingKey, EncodingKey, Header, Validation, decode, encode, errors::ErrorKind,
-};
+use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
+use sha2::{Digest, Sha256};
 use sqlx::Error as SqlxError;
 use std::sync::Arc;
-use std::time::{Duration, SystemTime};
 use uuid::Uuid;
 
 use crate::model::auth::AuthLoginResult;
 use crate::{
-    model::auth::{AppClaims, AuthInfo},
+    model::auth::AuthInfo,
     model::user::User,
-    repository::user_repository::UserRepository,
+    repository::{session_repository::SessionRepository, user_repository::UserRepository},
     util::api_response::ServiceError,
 };
 
@@ -32,25 +31,32 @@ pub trait AuthServiceTrait {
     async fn login(&self, email: &str, password: &str) -> Result<AuthLoginResult, ServiceError>;
     async fn exchange(&self, provider: &str, token: &str) -> Result<(), ServiceError>;
     async fn extract_auth_info(&self, token: &str) -> Result<AuthInfo, ServiceError>;
+    async fn logout(&self, auth: &AuthInfo) -> Result<(), ServiceError>;
     async fn get_me(&self, user_id: Uuid) -> Result<User, ServiceError>;
 }
 
 pub struct AuthServiceImpl {
-    app_secret: String,
-    app_expire_duration: u64,
+    session_expire_duration: u64,
     user_repository: UserRepository,
+    session_repository: SessionRepository,
+}
+
+/// The stored form of a session token. The token is 256 random bits, so a plain SHA-256
+/// is enough; a slow hash would only add cost to every request.
+fn hash_token(token: &str) -> Vec<u8> {
+    Sha256::digest(token.as_bytes()).to_vec()
 }
 
 impl AuthServiceImpl {
     pub fn new(
         user_repository: UserRepository,
-        app_secret: String,
-        app_expire_duration: u64,
+        session_repository: SessionRepository,
+        session_expire_duration: u64,
     ) -> Self {
         AuthServiceImpl {
-            app_secret,
-            app_expire_duration,
+            session_expire_duration,
             user_repository,
+            session_repository,
         }
     }
 
@@ -64,38 +70,19 @@ impl AuthServiceImpl {
             .map(String::from)
     }
 
-    fn issue_app_token(&self, user_id: Uuid, email: &str) -> Result<String, ServiceError> {
-        let now = SystemTime::now()
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .expect("Return the epoch time");
-        let iat = now.as_secs() as i64;
-        let exp = (now + Duration::from_secs(self.app_expire_duration)).as_secs() as i64;
-        let claims = AppClaims {
-            sub: user_id,
-            email: String::from(email),
-            iat,
-            exp,
-        };
-
-        encode(
-            &Header::default(),
-            &claims,
-            &EncodingKey::from_secret(self.app_secret.as_ref()),
-        )
-        .map_err(|e| ServiceError::FailedTokenCreation(e.to_string()))
-    }
-
-    fn verify_app_token(&self, token: &str) -> Result<AppClaims, ServiceError> {
-        decode::<AppClaims>(
-            token,
-            &DecodingKey::from_secret(self.app_secret.as_ref()),
-            &Validation::default(),
-        )
-        .map_err(|e| match e.kind() {
-            ErrorKind::ExpiredSignature => ServiceError::ExpiredAuthToken,
-            _ => ServiceError::InvalidAuthToken,
-        })
-        .map(|t| t.claims)
+    /// Starts a session and returns its token, the only copy that ever exists.
+    async fn start_session(&self, user_id: Uuid) -> Result<String, ServiceError> {
+        let mut bytes = [0u8; 32];
+        password_hash::rand_core::OsRng.fill_bytes(&mut bytes);
+        let token = URL_SAFE_NO_PAD.encode(bytes);
+        self.session_repository
+            .create(
+                user_id,
+                &hash_token(&token),
+                self.session_expire_duration as f64,
+            )
+            .await?;
+        Ok(token)
     }
 
     fn hash_password(&self, password: &str) -> Result<String, ServiceError> {
@@ -142,7 +129,7 @@ impl AuthServiceTrait for AuthServiceImpl {
                 other => other.into(),
             })?;
 
-        let access_token = self.issue_app_token(user.id, &user.email)?;
+        let access_token = self.start_session(user.id).await?;
         Ok(AuthLoginResult { access_token, user })
     }
 
@@ -164,7 +151,7 @@ impl AuthServiceTrait for AuthServiceImpl {
         self.verify_password(password, password_hash)?;
 
         let user = auth_user;
-        let access_token = self.issue_app_token(user.id, &user.email)?;
+        let access_token = self.start_session(user.id).await?;
         Ok(AuthLoginResult { access_token, user })
     }
 
@@ -175,13 +162,22 @@ impl AuthServiceTrait for AuthServiceImpl {
     }
 
     async fn extract_auth_info(&self, token: &str) -> Result<AuthInfo, ServiceError> {
-        match self.verify_app_token(token) {
-            Ok(app) => Ok(AuthInfo {
-                user_id: app.sub,
-                email: app.email,
-            }),
-            Err(_) => Err(ServiceError::InvalidAuthToken),
+        let hash = hash_token(token);
+        match self.session_repository.find_valid(&hash).await? {
+            Some(auth) => Ok(auth),
+            None => {
+                // Drop the session if it only expired, so dead sessions do not pile up.
+                self.session_repository.delete_by_hash(&hash).await?;
+                Err(ServiceError::InvalidAuthToken)
+            }
         }
+    }
+
+    async fn logout(&self, auth: &AuthInfo) -> Result<(), ServiceError> {
+        self.session_repository
+            .delete(auth.user_id, auth.session_id)
+            .await?;
+        Ok(())
     }
 
     async fn get_me(&self, user_id: Uuid) -> Result<User, ServiceError> {

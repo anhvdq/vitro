@@ -77,12 +77,8 @@ pub fn object_storage_bucket() -> String {
         .expect("'OBJECT_STORAGE_BUCKET' is not defined in the environment.")
 }
 
-pub fn jwt_secret() -> String {
-    get("JWT_SECRET").expect("'JWT_SECRET' is not defined in the environment.")
-}
-
-pub fn jwt_expire_duration() -> u64 {
-    get_or_default("JWT_EXPIRE_DURATION", 3600.to_string())
+pub fn session_expire_duration() -> u64 {
+    get_or_default("SESSION_EXPIRE_DURATION", 3600.to_string())
         .parse()
-        .expect("'JWT_EXPIRE_DURATION' must be a integer number")
+        .expect("'SESSION_EXPIRE_DURATION' must be a integer number")
 }

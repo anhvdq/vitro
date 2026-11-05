@@ -12,7 +12,7 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 use utoipa_scalar::{Scalar, Servable};
 
-use crate::config::settings::{jwt_expire_duration, jwt_secret};
+use crate::config::settings::session_expire_duration;
 use crate::middleware::auth::authorize;
 use crate::repository::file_metadata_repository::{
     FileMetadataRepository, FileMetadataRepositoryImpl,
@@ -22,6 +22,7 @@ use crate::repository::user_repository::UserRepository;
 use crate::repository::{
     asset_repository::{AssetRepository, AssetRepositoryImpl},
     dataset_repository::{DatasetRepository, DatasetRepositoryImpl},
+    session_repository::{SessionRepository, SessionRepositoryImpl},
     task_repository::{TaskRepository, TaskRepositoryImpl},
     task_run_repository::{TaskRunRepository, TaskRunRepositoryImpl},
 };
@@ -65,12 +66,7 @@ impl Modify for BearerSecurity {
         let components = openapi.components.as_mut().unwrap(); // components is guaranteed to be present
         components.add_security_scheme(
             "bearerAuth",
-            SecurityScheme::Http(
-                HttpBuilder::new()
-                    .scheme(HttpAuthScheme::Bearer)
-                    .bearer_format("JWT")
-                    .build(),
-            ),
+            SecurityScheme::Http(HttpBuilder::new().scheme(HttpAuthScheme::Bearer).build()),
         );
     }
 }
@@ -109,10 +105,13 @@ pub fn routes(db_conn: Arc<PgDatabase>, object_store: Arc<ObjectStore>) -> IntoM
     // Initialize user service
     let user_repository: UserRepository = Arc::new(UserRepositoryImpl::new(Arc::clone(&db_conn)));
 
+    let session_repository: SessionRepository =
+        Arc::new(SessionRepositoryImpl::new(Arc::clone(&db_conn)));
+
     let auth_service: AuthService = Arc::new(AuthServiceImpl::new(
         Arc::clone(&user_repository),
-        jwt_secret(),
-        jwt_expire_duration(),
+        session_repository,
+        session_expire_duration(),
     ));
 
     let file_repository: FileRepository =

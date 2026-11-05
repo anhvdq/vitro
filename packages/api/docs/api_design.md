@@ -11,7 +11,7 @@ Base URL: `/`
 
 > Note: you may see `/api/v1` used in examples elsewhere; this backend currently serves routes without a version prefix (e.g. `/datasets`, `/assets`).
 
-Auth: Bearer token (Vitro backend JWT)
+Auth: Bearer token (opaque server-side session token; `POST /auth/logout` revokes it)
 
 - Clients authenticate with the Vitro backend using:
   - `POST /auth/signup` (email/password registration)
