@@ -50,7 +50,7 @@ Useful focused commands:
 
 - `just dev-web` and `just dev-api`
 - `just test-web` and `just test-rust` (`just test` runs both)
-- `just test-db` for the event queue and claim loop (needs `DATABASE_URL` to a Postgres that can create test databases)
+- `just test-db` for the event queue, claim loop and session tests (needs `DATABASE_URL` to a Postgres that can create test databases)
 - `just test-e2e` for the database-backed API flow
 - `just check-web` and `just check-rust` (lint, format check, typecheck)
 - `just fmt` to write formatting

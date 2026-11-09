@@ -5,6 +5,7 @@ use crate::model::user::{ReadUserDTO, User};
 
 #[derive(Clone)]
 pub struct AuthInfo {
+    pub session_id: Uuid,
     pub user_id: Uuid,
     #[allow(dead_code)]
     pub email: String,
@@ -55,12 +56,4 @@ pub struct AuthExchangeRequestDTO {
     /// Provider-issued token.
     #[validate(length(min = 1))]
     pub token: String,
-}
-
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-pub struct AppClaims {
-    pub sub: Uuid,
-    pub email: String,
-    pub iat: i64,
-    pub exp: i64,
 }
