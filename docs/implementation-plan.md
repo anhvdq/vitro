@@ -36,6 +36,7 @@ Byte-identical `cp`, verify with `cmp`, commit, push. No content edits.
 - **P4**: `google_sheets` connector, MCP + read-only REST with API keys and audit log.
 - P0b deviations from the design docs, kept consistent with existing code: runtime `sqlx::query_as` (no `query_as!`/`.sqlx` cache), the `time` crate instead of `chrono`, UUID v7 instead of ULID for event ids, no `Uow` trait until P1 needs one, and no monthly partitioning of `events` yet. Mailpit joins the Compose file with the notify worker.
 - P0c: sessions use an opaque Bearer token (SHA-256 stored, absolute expiry, `POST /auth/logout`) instead of the design's HttpOnly cookie, and signup stays open. Cookie transport with CSRF protection comes with the SolidJS app; invites and password reset are a separate slice.
+- P0d: `packages/web` is a Solid app with a sign-in slice (sign in, show the current user, sign out) against the real API. The API client is generated from `packages/contracts/openapi.json`, which a Rust test keeps in sync with the routes. Deferred until a screen needs them: Kobalte, ts-pattern, neverthrow, oxlint, the ast-grep rules FE-001/002/004 and the Playwright suite. The React recipes are now `*-frontend`; `just dev` still starts the React app.
 - Existing `task`/`task_run` placeholders replaced by `derivation_runs` in P2 (flagged for removal, not blended).
 
 ## Verification

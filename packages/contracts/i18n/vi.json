@@ -1,0 +1,13 @@
+{
+	"signIn.title": "Đăng nhập",
+	"signIn.email": "Email",
+	"signIn.password": "Mật khẩu",
+	"signIn.submit": "Đăng nhập",
+	"signIn.submitting": "Đang đăng nhập…",
+	"signIn.invalid": "Email hoặc mật khẩu không đúng.",
+	"signIn.unavailable": "Không thể kết nối tới máy chủ. Vui lòng thử lại.",
+	"home.signedInAs": "Đang đăng nhập với {email}",
+	"home.loading": "Đang tải…",
+	"home.loadFailed": "Không thể tải thông tin tài khoản.",
+	"home.signOut": "Đăng xuất"
+}

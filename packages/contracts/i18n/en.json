@@ -1,0 +1,13 @@
+{
+	"signIn.title": "Sign in",
+	"signIn.email": "Email",
+	"signIn.password": "Password",
+	"signIn.submit": "Sign in",
+	"signIn.submitting": "Signing in…",
+	"signIn.invalid": "Incorrect email or password.",
+	"signIn.unavailable": "Cannot reach the server. Please try again.",
+	"home.signedInAs": "Signed in as {email}",
+	"home.loading": "Loading…",
+	"home.loadFailed": "Could not load your account.",
+	"home.signOut": "Sign out"
+}

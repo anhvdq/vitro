@@ -2,5 +2,5 @@
 	"name": "vitro",
 	"private": true,
 	"packageManager": "bun@1.3.13",
-	"workspaces": ["packages/frontend"]
+	"workspaces": ["packages/frontend", "packages/web"]
 }

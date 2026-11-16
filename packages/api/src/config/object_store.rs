@@ -17,6 +17,12 @@ pub trait ObjectStoreTrait {
 pub struct ObjectStore {
     client: AmazonS3,
 }
+impl ObjectStore {
+    pub fn from_client(client: AmazonS3) -> Self {
+        Self { client }
+    }
+}
+
 impl ObjectStoreTrait for ObjectStore {
     async fn init() -> Result<Self, Error> {
         let endpoint = settings::object_storage_endpoint();

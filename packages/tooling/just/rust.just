@@ -13,6 +13,8 @@ check-rust:
     cargo fmt --all -- --check
     cargo clippy --workspace --all-targets --all-features -- -D warnings
     cargo check --workspace --all-targets --all-features
+    # The OpenAPI snapshot must match the API (no database needed)
+    cargo test -p vitro-api --test openapi
 
 test-rust:
     cargo test --workspace --lib --bins
