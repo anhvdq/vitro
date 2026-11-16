@@ -1,26 +1,27 @@
 # Single entry point for repository workflows. Run `just --list` for recipes.
 
 import 'packages/tooling/just/rust.just'
+import 'packages/tooling/just/frontend.just'
 import 'packages/tooling/just/web.just'
 
 # Create missing .env files from their templates (never overwrites)
 setup:
     cargo x setup
 
-# Run the API and the web app together
+# Run the API and the React app together (the Solid app joins in P3: `just dev-web`)
 dev:
     #!/usr/bin/env sh
     trap 'kill 0' EXIT
-    just dev-api & just dev-web & wait
+    just dev-api & just dev-frontend & wait
 
 # Build release artifacts
-build: build-api build-web
+build: build-api build-frontend build-web
 
 # Write formatting
-fmt: fmt-rust fmt-web
+fmt: fmt-rust fmt-frontend fmt-web
 
 # Every check required before handoff
-check: check-rust check-web
+check: check-rust check-frontend check-web check-contracts
 
 # Unit tests (no database)
-test: test-rust test-web
+test: test-rust test-frontend test-web

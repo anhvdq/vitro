@@ -102,6 +102,14 @@ const SCALAR_CUSTOM_HTML: &str = r#"
 "#;
 
 pub fn routes(db_conn: Arc<PgDatabase>, object_store: Arc<ObjectStore>) -> IntoMakeService<Router> {
+    app(db_conn, object_store).0.into_make_service()
+}
+
+/// The full application and its OpenAPI document. Building it opens no connections.
+pub fn app(
+    db_conn: Arc<PgDatabase>,
+    object_store: Arc<ObjectStore>,
+) -> (Router, utoipa::openapi::OpenApi) {
     // Initialize user service
     let user_repository: UserRepository = Arc::new(UserRepositoryImpl::new(Arc::clone(&db_conn)));
 
@@ -163,9 +171,9 @@ pub fn routes(db_conn: Arc<PgDatabase>, object_store: Arc<ObjectStore>) -> IntoM
         .merge(protected)
         .split_for_parts();
     let app_router =
-        app_router.merge(Scalar::with_url("/scalar", api).custom_html(SCALAR_CUSTOM_HTML));
+        app_router.merge(Scalar::with_url("/scalar", api.clone()).custom_html(SCALAR_CUSTOM_HTML));
 
-    app_router
+    let router = app_router
         .layer(
             CorsLayer::new()
                 .allow_methods([
@@ -175,7 +183,10 @@ pub fn routes(db_conn: Arc<PgDatabase>, object_store: Arc<ObjectStore>) -> IntoM
                     Method::PATCH,
                     Method::DELETE,
                 ])
-                .allow_origin(["http://localhost:5173".parse::<HeaderValue>().unwrap()])
+                .allow_origin([
+                    "http://localhost:5173".parse::<HeaderValue>().unwrap(),
+                    "http://localhost:5174".parse::<HeaderValue>().unwrap(),
+                ])
                 .allow_headers([
                     AUTHORIZATION,
                     ACCEPT,
@@ -183,8 +194,8 @@ pub fn routes(db_conn: Arc<PgDatabase>, object_store: Arc<ObjectStore>) -> IntoM
                     "X-Workspace-Id".parse::<HeaderName>().unwrap(),
                 ]),
         )
-        .layer(TraceLayer::new_for_http()) // Enable logging
-        .into_make_service()
+        .layer(TraceLayer::new_for_http()); // Enable logging
+    (router, api)
 }
 
 #[utoipa::path(

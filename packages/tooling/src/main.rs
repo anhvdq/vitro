@@ -3,7 +3,7 @@
 use std::{path::Path, process::ExitCode};
 
 /// Packages whose `.env` is created from `.env.example`.
-const ENV_PACKAGES: [&str; 2] = ["packages/api", "packages/frontend"];
+const ENV_PACKAGES: [&str; 3] = ["packages/api", "packages/frontend", "packages/web"];
 
 fn main() -> ExitCode {
     let command = std::env::args().nth(1);
